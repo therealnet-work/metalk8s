@@ -37,16 +37,18 @@ class SetupStep(enum.Enum):
             ),
             command=shell._seq(*(_check_dep(dep) for dep in deps)),
             halt_on_failure=True,
+            hide_step_if=True,
         )
 
     @staticmethod
     def git_pull():
         return core.Git(
-            "git pull",
+            "Git pull",
             repourl="%(prop:git_reference)s",
             method="clobber",
             retry_fetch=True,
             halt_on_failure=True,
+            hide_step_if=True,
         )
 
     @staticmethod
@@ -58,6 +60,7 @@ class SetupStep(enum.Enum):
                 ". /usr/local/bin/use_scality_proxy_cache",
             ),
             halt_on_failure=True,
+            hide_step_if=True,
         )
 
     @staticmethod
@@ -90,6 +93,7 @@ class SetupStep(enum.Enum):
             ),
             inline=True,
             halt_on_failure=True,
+            hide_step_if=True,
         )
 
 
