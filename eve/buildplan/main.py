@@ -233,7 +233,7 @@ def set_version_property():
         property_name="metalk8s_version",
         command="bash -c '{}'".format(
             shell._and(
-                '. <(curl -s "%(prop:artifacts_private_url)s")',
+                '. <(curl -s "%(prop:artifacts_private_url)s/product.txt")',
                 "echo $VERSION",
             )
         ),

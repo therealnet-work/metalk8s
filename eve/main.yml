@@ -20,7 +20,8 @@ stages:
     - SetPropertyFromCommand:
         name: Set version as property from built artifacts
         property: metalk8s_version
-        command: bash -c '. <(curl -s "%(prop:artifacts_private_url)s") && echo $VERSION'
+        command: bash -c '. <(curl -s "%(prop:artifacts_private_url)s/product.txt")
+          && echo $VERSION'
     - TriggerStages:
         name: Trigger single-node and multiple-nodes steps with built ISO
         stage_names:
