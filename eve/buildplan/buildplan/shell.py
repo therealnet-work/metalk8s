@@ -38,7 +38,7 @@ def _if(predicate, _then, _else=None):
         'if {predicate}',
         "then {_then}",
         "else {_else}" if _else is not None else None,
-        "done",
+        "fi",
     ).format(predicate=predicate, _then=_then, _else=_else)
 
 

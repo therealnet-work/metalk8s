@@ -353,8 +353,8 @@ stages:
     - ShellCommand:
         name: Check if unzip and curl are installed
         command: if ! unzip -h 2&> /dev/null; then echo "Aborting - unzip not installed
-          and required" >&2; exit 1; done; if ! curl -h 2&> /dev/null; then echo "Aborting
-          - curl not installed and required" >&2; exit 1; done
+          and required" >&2; exit 1; fi; if ! curl -h 2&> /dev/null; then echo "Aborting
+          - curl not installed and required" >&2; exit 1; fi
         haltOnFailure: true
         hideStepIf: true
     - ShellCommand:
@@ -366,7 +366,7 @@ stages:
     - ShellCommand:
         name: Check that Terraform was installed
         command: if terraform --version 2&> /dev/null; then echo "Aborting - Terraform
-          not installed and required" >&2; exit 1; done
+          not installed and required" >&2; exit 1; fi
         haltOnFailure: true
     - ShellCommand:
         name: Initialize Terraform
