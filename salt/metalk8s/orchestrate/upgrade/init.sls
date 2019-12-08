@@ -39,6 +39,13 @@ Skip node {{ node }}, already in {{ node_version }} newer than {{ dest_version }
 
   {%- else %}
 
+Install apiserver-proxy on {{ node }}:
+  salt.state:
+    - tgt: {{ node }}
+    - sls:
+      - metalk8s.kubernetes.apiserver-proxy
+    - saltenv: {{ saltenv }}
+
 Wait for API server to be available on {{ node }}:
   http.wait_for_successful_query:
   - name: https://127.0.0.1:7443/healthz
