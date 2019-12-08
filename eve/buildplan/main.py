@@ -294,6 +294,7 @@ def get_iso_from_artifacts(destination=None, source=None):
     yield shell.Shell(
         "Retrieve ISO image checksum" + name_suffix,
         command=_curl_cmd("SHA256SUM"),
+        halt_on_failure=True,
     )
 
     # Get ISO archive, with retry
@@ -319,8 +320,8 @@ def get_iso_from_artifacts(destination=None, source=None):
     # Validate checksum
     yield shell.Shell(
         "Check ISO image with checksum" + name_suffix,
-        command="sha256sum -c SHA256SUM",
-        workdir=dest_dir,
+        command="sha256sum -c {}".format(dest_dir / "SHA256SUM"),
+        halt_on_failure=True,
     )
 
 

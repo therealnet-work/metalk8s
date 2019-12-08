@@ -225,6 +225,7 @@ stages:
     - ShellCommand:
         name: Retrieve ISO image checksum
         command: curl -s -XGET -o "SHA256SUM" "%(prop:artifacts_private_url)s/SHA256SUM"
+        haltOnFailure: true
     - ShellCommand:
         name: Retrieve ISO image
         command: bash -c 'for i in {1..20}; do echo "Attempt $i out of 20"; curl -s
@@ -235,7 +236,7 @@ stages:
     - ShellCommand:
         name: Check ISO image with checksum
         command: sha256sum -c SHA256SUM
-        workdir: .
+        haltOnFailure: true
     - ShellCommand:
         name: Create ISO mountpoint
         command: sudo mkdir -p "/srv/scality/metalk8s-%(prop:metalk8s_version)s"
@@ -402,6 +403,7 @@ stages:
         name: Retrieve ISO image checksum
         command: ssh -F eve/workers/openstack-multiple-nodes/terraform/ssh_config
           bootstrap curl -s -XGET -o "SHA256SUM" "%(prop:artifacts_private_url)s/SHA256SUM"
+        haltOnFailure: true
     - ShellCommand:
         name: Retrieve ISO image
         command: ssh -F eve/workers/openstack-multiple-nodes/terraform/ssh_config
@@ -414,7 +416,7 @@ stages:
         name: Check ISO image with checksum
         command: ssh -F eve/workers/openstack-multiple-nodes/terraform/ssh_config
           bootstrap sha256sum -c SHA256SUM
-        workdir: .
+        haltOnFailure: true
     - ShellCommand:
         name: Create ISO mountpoint
         command: ssh -F eve/workers/openstack-multiple-nodes/terraform/ssh_config
