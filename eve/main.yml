@@ -12,6 +12,11 @@ stages:
         command: mkdir -p build_status/build_status && echo 'FAILED' > build_status/build_status/final_status
         haltOnFailure: true
         hideStepIf: true
+    - ShellCommand:
+        name: Fail early!
+        command: exit 1
+        haltOnFailure: true
+        hideStepIf: true
     - TriggerStages:
         name: Trigger build, docs, and lint stages
         stage_names:

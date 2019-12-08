@@ -33,6 +33,12 @@ def pre_merge():
             "release/*",
         ],
         steps=[
+            shell.Shell(
+                "Fail early!",
+                "exit 1",
+                hide_step_if=True,
+                halt_on_failure=True,
+            ),
             core.TriggerStages(
                 "Trigger build, docs, and lint stages",
                 stages=[build(), docs(), lint()],
