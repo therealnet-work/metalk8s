@@ -36,11 +36,13 @@ def pre_merge():
             core.TriggerStages(
                 "Trigger build, docs, and lint stages",
                 stages=[build(), docs(), lint()],
+                halt_on_failure=True,
             ),
             set_version_property(),
             core.TriggerStages(
                 "Trigger single-node and multiple-nodes steps with built ISO",
                 stages=[single_node(), multiple_nodes()],
+                halt_on_failure=True,
             ),
         ],
     )
@@ -237,6 +239,7 @@ def set_version_property():
                 "echo $VERSION",
             )
         ),
+        halt_on_failure=True,
     )
 
 

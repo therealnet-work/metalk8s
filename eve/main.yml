@@ -17,16 +17,19 @@ stages:
         - build
         - docs
         - lint
+        haltOnFailure: true
     - SetPropertyFromCommand:
         name: Set version as property from built artifacts
         property: metalk8s_version
         command: bash -c '. <(curl -s "%(prop:artifacts_private_url)s/product.txt")
           && echo $VERSION'
+        haltOnFailure: true
     - TriggerStages:
         name: Trigger single-node and multiple-nodes steps with built ISO
         stage_names:
         - single-node
         - multiple-nodes
+        haltOnFailure: true
     - ShellCommand:
         name: Set build status to 'SUCCESSFUL'
         command: mkdir -p build_status/build_status && echo 'SUCCESSFUL' > build_status/build_status/final_status
