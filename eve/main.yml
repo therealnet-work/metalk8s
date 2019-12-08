@@ -256,7 +256,7 @@ stages:
           \ << END\napiVersion: metalk8s.scality.com/v1alpha2\nkind: BootstrapConfiguration\n\
           networks:\n  controlPlane: 10.100.0.0/16\n  workloadPlane: 10.100.0.0/16\n\
           ca:\n  minion: $(hostname)\napiServer:\nhost: $(ip route get 10.100.0.0\
-          \ | awk '/10.100.0.0/{ print $6 }')\narchives:\n- \"$(relpath 'metalk8s.iso')\"\
+          \ | awk \"/10.100.0.0/{ print $6 }\")\narchives:\n- \"$(relpath metalk8s.iso)\"\
           \nEND'"
         haltOnFailure: true
     - ShellCommand:
@@ -439,7 +439,7 @@ stages:
           \ << END\napiVersion: metalk8s.scality.com/v1alpha2\nkind: BootstrapConfiguration\n\
           networks:\n  controlPlane: 10.100.0.0/16\n  workloadPlane: 10.100.0.0/16\n\
           ca:\n  minion: $(hostname)\napiServer:\nhost: $(ip route get 10.100.0.0\
-          \ | awk '/10.100.0.0/{ print $6 }')\narchives:\n- \"$(relpath 'metalk8s.iso')\"\
+          \ | awk \"/10.100.0.0/{ print $6 }\")\narchives:\n- \"$(relpath metalk8s.iso)\"\
           \nEND'"
         haltOnFailure: true
     - ShellCommand:

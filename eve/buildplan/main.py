@@ -370,10 +370,10 @@ def prepare_bootstrap(iso="metalk8s.iso", mountpoint=DEFAULT_MOUNTPOINT):
                 "apiServer:",
                 shell._fmt_args(
                     "host: $(ip route get 10.100.0.0",
-                    "| awk '/10.100.0.0/{{ print $6 }}')",
+                    '| awk "/10.100.0.0/{{ print $6 }}")',
                 ),
                 "archives:",
-                "- \"$(relpath '{iso}')\"",
+                '- "$(relpath {iso})"',
                 "END",
                 join_with="\n",
             ),
