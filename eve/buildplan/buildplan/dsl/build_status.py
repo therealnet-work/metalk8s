@@ -22,6 +22,7 @@ def set_final_status(status, stage_name=None):
             "echo '{}' > {}".format(status, build_status_dir / "final_status"),
         ),
         halt_on_failure=True,
+        hide_step_if=True,
     )
 
 
@@ -30,6 +31,7 @@ def upload_final_status():
         "Upload final status to artifacts",
         source=BUILD_STATUS_ARTIFACTS,
         always_run=True,
+        hide_step_if=True,
     )
 
 

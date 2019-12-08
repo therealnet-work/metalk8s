@@ -11,6 +11,7 @@ stages:
         name: Set build status to 'FAILED'
         command: mkdir -p build_status/build_status && echo 'FAILED' > build_status/build_status/final_status
         haltOnFailure: true
+        hideStepIf: true
     - TriggerStages:
         name: Trigger build, docs, and lint stages
         stage_names:
@@ -34,10 +35,12 @@ stages:
         name: Set build status to 'SUCCESSFUL'
         command: mkdir -p build_status/build_status && echo 'SUCCESSFUL' > build_status/build_status/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Upload:
         name: Upload final status to artifacts
         source: &id001 build_status
         alwaysRun: true
+        hideStepIf: true
   build:
     worker:
       type: kube_pod
@@ -49,6 +52,7 @@ stages:
         name: Set build status to 'FAILED' for build
         command: mkdir -p build_status/build_status/build && echo 'FAILED' > build_status/build_status/build/final_status
         haltOnFailure: true
+        hideStepIf: true
     - ShellCommand:
         name: Wait for Docker daemon to be ready
         command: bash -c 'for i in {1..150}; do docker info &> /dev/null && exit;
@@ -91,10 +95,12 @@ stages:
         name: Set build status to 'SUCCESSFUL' for build
         command: mkdir -p build_status/build_status/build && echo 'SUCCESSFUL' > build_status/build_status/build/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Upload:
         name: Upload final status to artifacts
         source: *id001
         alwaysRun: true
+        hideStepIf: true
   docs:
     worker:
       type: kube_pod
@@ -108,6 +114,7 @@ stages:
         name: Set build status to 'FAILED' for docs
         command: mkdir -p build_status/build_status/docs && echo 'FAILED' > build_status/build_status/docs/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Git:
         name: Git pull
         repourl: '%(prop:git_reference)s'
@@ -140,10 +147,12 @@ stages:
         name: Set build status to 'SUCCESSFUL' for docs
         command: mkdir -p build_status/build_status/docs && echo 'SUCCESSFUL' > build_status/build_status/docs/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Upload:
         name: Upload final status to artifacts
         source: *id001
         alwaysRun: true
+        hideStepIf: true
   lint:
     worker:
       type: kube_pod
@@ -155,6 +164,7 @@ stages:
         name: Set build status to 'FAILED' for lint
         command: mkdir -p build_status/build_status/lint && echo 'FAILED' > build_status/build_status/lint/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Git:
         name: Git pull
         repourl: '%(prop:git_reference)s'
@@ -176,10 +186,12 @@ stages:
         name: Set build status to 'SUCCESSFUL' for lint
         command: mkdir -p build_status/build_status/lint && echo 'SUCCESSFUL' > build_status/build_status/lint/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Upload:
         name: Upload final status to artifacts
         source: *id001
         alwaysRun: true
+        hideStepIf: true
   single-node:
     worker:
       type: openstack
@@ -192,6 +204,7 @@ stages:
         command: mkdir -p build_status/build_status/single-node && echo 'FAILED' >
           build_status/build_status/single-node/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Git:
         name: Git pull
         repourl: '%(prop:git_reference)s'
@@ -300,10 +313,12 @@ stages:
         command: mkdir -p build_status/build_status/single-node && echo 'SUCCESSFUL'
           > build_status/build_status/single-node/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Upload:
         name: Upload final status to artifacts
         source: *id001
         alwaysRun: true
+        hideStepIf: true
   multiple-nodes:
     worker:
       type: openstack
@@ -316,6 +331,7 @@ stages:
         command: mkdir -p build_status/build_status/multiple-nodes && echo 'FAILED'
           > build_status/build_status/multiple-nodes/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Git:
         name: Git pull
         repourl: '%(prop:git_reference)s'
@@ -518,7 +534,9 @@ stages:
         command: mkdir -p build_status/build_status/multiple-nodes && echo 'SUCCESSFUL'
           > build_status/build_status/multiple-nodes/final_status
         haltOnFailure: true
+        hideStepIf: true
     - Upload:
         name: Upload final status to artifacts
         source: *id001
         alwaysRun: true
+        hideStepIf: true
