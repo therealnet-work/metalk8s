@@ -30,17 +30,3 @@ class StageDecorator(metaclass=abc.ABCMeta):
     def mutate(self, stage):
         """Mutate a stage object after its generation from a factory."""
         pass  # pragma: no cover
-
-
-
-
-
-# }}}
-# Setup steps {{{
-
-
-# }}}
-# Terraform {{{
-
-
-# }}}
