@@ -75,13 +75,7 @@ def build():
 
 
 @dsl.WithStatus()
-@dsl.WithArtifacts(
-    urls=[
-        "docs/html/index.html",
-        "docs/latex/MetalK8s.pdf",
-        "docs/CHANGELOG.md",
-    ]
-)
+@dsl.WithArtifacts(urls=["docs/html/index.html", "docs/latex/MetalK8s.pdf"])
 @dsl.WithSetup([dsl.SetupStep.GIT, dsl.SetupStep.CACHE])
 def docs():
     return core.Stage(
@@ -98,9 +92,7 @@ def docs():
         ),
         steps=[
             build_docs(),
-            *dsl.copy_artifacts(
-                ["docs/_build/*", "CHANGELOG.md"], destination="docs",
-            ),
+            *dsl.copy_artifacts(["docs/_build/*"], destination="docs",),
         ],
     )
 

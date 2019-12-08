@@ -124,15 +124,14 @@ stages:
           READTHEDOCS: 'True'
     - ShellCommand:
         name: Copy artifacts for 'docs'
-        command: mkdir -p artifacts/docs; for artifact in docs/_build/* CHANGELOG.md;
-          do cp -r "$artifact" artifacts/docs; done
+        command: mkdir -p artifacts/docs; for artifact in docs/_build/*; do cp -r
+          "$artifact" artifacts/docs; done
     - Upload:
         name: Upload artifacts
         source: *id002
         urls:
         - docs/html/index.html
         - docs/latex/MetalK8s.pdf
-        - docs/CHANGELOG.md
     - ShellCommand:
         name: Set build status to 'SUCCESSFUL' for docs
         command: mkdir -p build_status/build_status/docs && echo 'SUCCESSFUL' > build_status/build_status/docs/final_status
