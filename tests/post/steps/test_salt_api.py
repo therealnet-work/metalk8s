@@ -35,8 +35,8 @@ def context():
 
 @when(parsers.parse(
     "we login to SaltAPI as '{username}' using password '{password}'"))
-def login_salt_api_basic(host, username, password, version, context):
-    address = _get_salt_api_address(host, version)
+def login_salt_api_basic(host, username, password, context):
+    address = _get_salt_api_address(host)
     token = base64.encodebytes(
         '{}:{}'.format(username, password).encode('utf-8')
     ).rstrip()
@@ -44,9 +44,9 @@ def login_salt_api_basic(host, username, password, version, context):
 
 
 @when("we login to SaltAPI with an admin ServiceAccount")
-def login_salt_api_admin_sa(host, k8s_client, admin_sa, version, context):
+def login_salt_api_admin_sa(host, k8s_client, admin_sa, context):
     sa_name, sa_namespace = admin_sa
-    address = _get_salt_api_address(host, version)
+    address = _get_salt_api_address(host)
 
     context['salt-api'] = _login_salt_api_sa(
         address, k8s_client,
@@ -56,8 +56,8 @@ def login_salt_api_admin_sa(host, k8s_client, admin_sa, version, context):
 
 @when(parsers.parse(
     "we login to SaltAPI with the ServiceAccount '{account_name}'"))
-def login_salt_api_system_sa(host, k8s_client, account_name, version, context):
-    address = _get_salt_api_address(host, version)
+def login_salt_api_system_sa(host, k8s_client, account_name, context):
+    address = _get_salt_api_address(host)
 
     context['salt-api'] = _login_salt_api_sa(
         address, k8s_client,
@@ -121,27 +121,17 @@ def _login_salt_api_sa(address, k8s_client, sa_name, sa_namespace):
     )
 
 
-def _get_salt_api_address(host, version):
+def _get_salt_api_address(host):
     SALT_API_PORT = 4507
-    cmd_cidr = ' '.join([
-        'salt-call', 'pillar.get',
-        'networks:control_plane',
-        'saltenv=metalk8s-{version}'.format(version=version),
-        '--out', 'json',
-    ])
-    with host.sudo():
-        cidr_output = host.check_output(cmd_cidr)
-    cidr = json.loads(cidr_output)['local']
-
     cmd_ip = ' '.join([
-        'salt-call', '--local',
-        'network.ip_addrs',
-        'cidr="{cidr}"'.format(cidr=cidr),
-        '--out', 'json',
+        'salt-call --local',
+        'grains.get',
+        'metalk8s:control_plane_ip',
+        '--out json',
     ])
     with host.sudo():
         cmd_output = host.check_output(cmd_ip)
-    ip = json.loads(cmd_output)['local'][0]
+    ip = json.loads(cmd_output)['local']
     return '{}:{}'.format(ip, SALT_API_PORT)
 
 
