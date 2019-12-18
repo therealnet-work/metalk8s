@@ -81,9 +81,20 @@ GO_BUILDER : LocalImage = _builder_image(
     ]
 )
 
+UI_BUILDER : LocalImage = _builder_image(
+    name='ui',
+    dockerfile=constants.ROOT/'ui'/'Dockerfile',
+    build_args={'NODE_IMAGE_VERSION': versions.NODEJS_IMAGE_VERSION},
+    file_dep=[constants.ROOT/'ui'/'entrypoint.sh']
+)
+
 
 _BUILDERS : Tuple[LocalImage, ...] = (
-    RPM_BUILDER, DEB_BUILDER, DOC_BUILDER, GO_BUILDER
+    RPM_BUILDER,
+    DEB_BUILDER,
+    DOC_BUILDER,
+    GO_BUILDER,
+    UI_BUILDER,
 )
 
 
