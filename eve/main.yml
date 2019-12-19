@@ -440,7 +440,11 @@ stages:
         docker-builder: eve/workers/pod-builder
     steps:
       - ShellCommand: *wait_for_docker
+      - ShellCommand: *ssh_ip_setup
       - Git: *git_pull
+      - ShellCommand:
+          name: debug
+          command: ip a && sleep 3600
       - ShellCommand:
           <<: *add_final_status_artifact_failed
           env:
