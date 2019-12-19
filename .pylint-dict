@@ -11,6 +11,7 @@ cmd
 cp
 checksum
 checksums
+config
 containerd
 de
 debuild
@@ -54,6 +55,7 @@ tmp
 tmpfs
 tox
 txt
+ui
 uptodate
 xenial
 yaml
