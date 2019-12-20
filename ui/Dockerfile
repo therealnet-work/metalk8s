@@ -2,8 +2,6 @@ ARG NODE_IMAGE_VERSION=10.16.0
 
 FROM node:${NODE_IMAGE_VERSION}
 
-USER node
-
 RUN mkdir -p ~/ui
 
 WORKDIR /home/node/ui
