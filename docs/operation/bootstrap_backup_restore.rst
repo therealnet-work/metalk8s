@@ -22,12 +22,6 @@ Restoration procedure
 
 .. warning::
 
-    You cannot use the restore script if you do not have High Availability
-    apiserver because some information required to reconfigure the others
-    nodes are stored in the apiserver.
-
-.. warning::
-
     In case of a 3-node etcd cluster (2 nodes + unreachable old bootstrap node)
     you need to remove the old bootstrap node from the etcd cluster before
     running the restore script.
@@ -41,9 +35,9 @@ First mount the ISO and then run the restore script:
 
 .. code::
 
-    /srv/scality/metalk8s-X.X.X/restore.sh --backup-file <backup_archive>
+   /srv/scality/metalk8s-X.X.X/restore.sh --backup-file <backup_archive> --apiserver-node-ip <node_ip>
 
 .. note::
 
     Replace `<backup_archive>` with the path to the backup archive you want
-    to use.
+    to use and `<node_ip>` with a node IP of one apiserver.
