@@ -276,19 +276,19 @@ stages:
       type: local
     steps:
       - ShellCommand: *add_final_status_artifact_failed
-      - TriggerStages:
-          name: Trigger build, docs and lint stages simultaneously
-          stage_names:
-            - build
-            - docs
-            - lint
-          haltOnFailure: true
-      - SetPropertyFromCommand: *set_version_prop
+      # - TriggerStages:
+      #     name: Trigger build, docs and lint stages simultaneously
+      #     stage_names:
+      #       - build
+      #       - docs
+      #       - lint
+      #     haltOnFailure: true
+      # - SetPropertyFromCommand: *set_version_prop
       - TriggerStages:
           name: Trigger single-node and multiple-nodes steps with built ISO
           stage_names:
             - single-node
-            - multiple-nodes
+            # - multiple-nodes
       - ShellCommand: *add_final_status_artifact_success
       - Upload: *upload_final_status_artifact
 
@@ -402,41 +402,41 @@ stages:
       - ShellCommand: *setup_cache
       - ShellCommand: *ssh_ip_setup
       # --- Retrieve ISO ---
-      - ShellCommand: *retrieve_iso_checksum
-      - ShellCommand: *retrieve_iso
-      - ShellCommand: *check_iso_checksum
+      # - ShellCommand: *retrieve_iso_checksum
+      # - ShellCommand: *retrieve_iso
+      # - ShellCommand: *check_iso_checksum
       # --- Prepare for Bootstrap ---
-      - ShellCommand: *create_mountpoint
-      - ShellCommand: *mount_iso
+      # - ShellCommand: *create_mountpoint
+      # - ShellCommand: *mount_iso
       - ShellCommand: *bootstrap_config
       # --- Install ---
-      - ShellCommand: *run_bootstrap
+      # - ShellCommand: *run_bootstrap
       # --- Test ---
-      - ShellCommand: &fast_tests
-          <<: *local_tests
-          name: Run fast tests locally
-          env: &_env_fast_tests
-            <<: *_env_local_tests
-            PYTEST_FILTERS: "post and ci and not multinodes and not slow"
-      - ShellCommand:
-          <<: *local_tests
-          name: Run slow tests locally
-          env:
-            <<: *_env_local_tests
-            PYTEST_FILTERS: "post and ci and not multinodes and slow"
+      # - ShellCommand: &fast_tests
+      #     <<: *local_tests
+      #     name: Run fast tests locally
+      #     env: &_env_fast_tests
+      #       <<: *_env_local_tests
+      #       PYTEST_FILTERS: "post and ci and not multinodes and not slow"
+      # - ShellCommand:
+      #     <<: *local_tests
+      #     name: Run slow tests locally
+      #     env:
+      #       <<: *_env_local_tests
+      #       PYTEST_FILTERS: "post and ci and not multinodes and slow"
       # --- Collect logs ---
-      - ShellCommand: *collect_sosreport
-      - ShellCommand:
-          <<: *copy_report_artifacts
-          env:
-            DEST_DIR: sosreport/sosreport/single-node-downgrade
-      - Upload: *upload_report_artifacts
-      - ShellCommand:
-          <<: *add_final_status_artifact_success
-          env:
-            <<: *_env_final_status_artifact_success
-            STEP_NAME: single-node
-      - Upload: *upload_final_status_artifact
+      # - ShellCommand: *collect_sosreport
+      # - ShellCommand:
+      #     <<: *copy_report_artifacts
+      #     env:
+      #       DEST_DIR: sosreport/sosreport/single-node-downgrade
+      # - Upload: *upload_report_artifacts
+      # - ShellCommand:
+      #     <<: *add_final_status_artifact_success
+      #     env:
+      #       <<: *_env_final_status_artifact_success
+      #       STEP_NAME: single-node
+      # - Upload: *upload_final_status_artifact
       - ShellCommand:
           <<: *wait_debug
           env:
