@@ -1,6 +1,8 @@
 import json
 import re
 
+import backoff
+
 import requests
 import requests.exceptions
 
@@ -17,6 +19,18 @@ from tests import utils
 # Constants {{{
 
 INGRESS_PORT = 8443
+REQUESTS_MAX_RETRIES = 10
+
+# }}}
+
+# backoff and retry {{{
+
+# Re-usable function decorator with exponential retry.
+retry = backoff.on_exception(
+    backoff.expo,
+    requests.exceptions.RequestException,
+    max_tries=REQUESTS_MAX_RETRIES,
+)
 
 # }}}
 
@@ -109,6 +123,7 @@ def check_cp_ingress_pod(request, host, k8s_client, control_plane_ip):
 # When {{{
 
 
+@retry
 @when(parsers.parse(
     "we perform a request on '{path}' with port '{port}' on control-plane IP"))
 def perform_request(host, context, control_plane_ip, path, port):
@@ -139,36 +154,34 @@ def dex_login(host, control_plane_ip, username, password, context):
 # Then {{{
 
 
+@retry
 @then("we can reach the OIDC openID configuration")
 def reach_openid_config(host, control_plane_ip):
-    def _get_openID_config():
-        try:
-            response = requests.get(
-                'https://{}:{}/oidc/.well-known/openid-configuration'.format(
-                    control_plane_ip, INGRESS_PORT
-                ),
-                verify=False,
-            )
-        except requests.exceptions.ConnectionError as exc:
-            pytest.fail(
-                "Unable to reach OpenID Configuration with error: {}".format(
-                    exc
-                )
-            )
-
-        assert response.status_code == 200
-        response_body = response.json()
-        # check for the existence of  keys[issuer, authorization_endpoint]
-        assert 'issuer' and 'authorization_endpoint' in response_body
-        assert response_body.get('issuer') == 'https://{}:{}/oidc'.format(
-            control_plane_ip, INGRESS_PORT
+    try:
+        response = requests.get(
+            'https://{}:{}/oidc/.well-known/openid-configuration'.format(
+                control_plane_ip, INGRESS_PORT
+            ),
+            verify=False,
         )
-        assert response_body.get(
-            'authorization_endpoint') == 'https://{}:{}/oidc/auth'.format(
-            control_plane_ip, INGRESS_PORT
+    except requests.exceptions.ConnectionError as exc:
+        pytest.fail(
+            "Unable to reach OpenID Configuration with error: {}".format(
+                exc
+            )
         )
 
-    utils.retry(_get_openID_config, times=10, wait=3)
+    assert response.status_code == 200
+    response_body = response.json()
+    # check for the existence of  keys[issuer, authorization_endpoint]
+    assert 'issuer' and 'authorization_endpoint' in response_body
+    assert response_body.get('issuer') == 'https://{}:{}/oidc'.format(
+        control_plane_ip, INGRESS_PORT
+    )
+    assert response_body.get(
+        'authorization_endpoint') == 'https://{}:{}/oidc/auth'.format(
+        control_plane_ip, INGRESS_PORT
+    )
 
 
 @then(parsers.parse(
@@ -205,6 +218,7 @@ def successful_login(host, context, status_code):
 # Helper {{{
 
 
+@retry
 def _dex_auth_request(control_plane_ip, username, password):
     try:
         response = requests.post(
