@@ -30,6 +30,7 @@ Archive {{ archive.iso }} available at {{ archive.path }}:
   - opts:
     - ro
     - nofail
+    - bind
   - persist: true
   - match_on:
     - name
