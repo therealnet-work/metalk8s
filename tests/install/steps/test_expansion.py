@@ -10,10 +10,16 @@ import yaml
 
 from tests import kube_utils
 from tests import utils
+from tests import versions
 
 # Scenarios
 @scenario('../features/expansion.feature', 'Add one node to the cluster')
 def test_cluster_expansion(host):
+    pass
+
+
+@scenario('../features/expansion.feature', 'ETCD failover on multi-member')
+def test_etcd_failover_on_multi_member(host):
     pass
 
 # When {{{
@@ -45,6 +51,32 @@ def deploy_node(host, ssh_config, version, name):
     ]
     run_salt_command(host, accept_ssh_key, ssh_config)
     run_salt_command(host, deploy, ssh_config)
+
+
+@when(parsers.parse('we remove "{node_name}" from the etcd cluster'))
+def remove_etcd_node(ssh_config, k8s_client, node_name):
+    node_id = node_name
+    node_name = utils.resolve_hostname(node_name, ssh_config)
+    etcd_member_id = get_etcd_member_id(k8s_client, ssh_config, node_id)
+    if etcd_member_id is None:
+        pytest.fail(
+            "unable to get etcd member ID for node {}".format(node_name)
+        )
+    try:
+        etcd_member_remove = etcdctl(
+            k8s_client, ['member', 'remove'], ssh_config, etcd_member_id
+        )
+    except Exception as exc:
+        raise
+
+    if etcd_member_remove:
+        etcd_member_list = etcdctl(
+            k8s_client, ['member', 'list'], ssh_config, node_id
+        )
+        assert node_name not in etcd_member_list, \
+            'node {} is still part of the etcd cluster'.format(node_name)
+    else:
+        pytest.fail("Unable to remove etcd member {}".format(node_name))
 
 
 # }}}
@@ -91,7 +123,10 @@ def check_node_status(ssh_config, k8s_client, hostname, expected_status):
 def check_etcd_role(ssh_config, k8s_client, node_name):
     """Check if the given node is a member of the etcd cluster."""
     node_name = utils.resolve_hostname(node_name, ssh_config)
-    etcd_member_list = etcdctl(k8s_client, ['member', 'list'], ssh_config)
+    node_id = "bootstrap"
+    etcd_member_list = etcdctl(
+        k8s_client, ['member', 'list'], ssh_config, node_id
+    )
     assert node_name in etcd_member_list, \
         'node {} is not part of the etcd cluster'.format(node_name)
 
@@ -171,10 +206,10 @@ def run_salt_command(host, command, ssh_config):
             output.stderr
         )
 
-def etcdctl(k8s_client, command, ssh_config):
+def etcdctl(k8s_client, command, ssh_config, node_id):
     """Run an etcdctl command inside the etcd container."""
     name = 'etcd-{}'.format(
-        utils.resolve_hostname('bootstrap', ssh_config)
+        utils.resolve_hostname(node_id, ssh_config)
     )
     etcd_command = [
         'etcdctl',
@@ -190,5 +225,25 @@ def etcdctl(k8s_client, command, ssh_config):
         stderr=True, stdin=False, stdout=True, tty=False
     )
     return output
+
+
+def get_etcd_member_id(k8s_client, ssh_config, node_id):
+    """Returns an etcd member ID"""
+    try:
+        etcd_member_list = etcdctl(
+            k8s_client, ['member', 'list'], ssh_config, node_id
+        )
+        # the member list above output is:
+        # 4b6029846830dc61: name=metalk8s-zzpcc-bootstrap.novalocal peerURLs=https://10.100.1.44:2380 clientURLs=https://10.100.1.44:2379 isLeader=true
+        # 6550922484a42d67: name=metalk8s-zzpcc-node-1.novalocal peerURLs=https://10.100.2.93:2380 clientURLs=https://10.100.2.93:2379 isLeader=false
+        # f000a963d764c8e: name=metalk8s-zzpcc-node-2.novalocal peerURLs=https://10.100.2.97:2380 clientURLs=https://10.100.2.97:2379 isLeader=false
+    except Exception as exc:
+        raise
+
+    for member in etcd_member_list.splitlines():
+        if node_name in member:
+            return member.split(':')[0]
+        else:
+            return None
 
 # }}}

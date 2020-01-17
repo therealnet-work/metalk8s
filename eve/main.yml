@@ -1198,6 +1198,9 @@ stages:
             "cat .ssh/bastion.pub >> .ssh/authorized_keys" &&
             scp -F ssh_config -3 bastion:.ssh/bastion.pub node1:.ssh/ &&
             ssh -F ssh_config node1
+            "cat .ssh/bastion.pub >> .ssh/authorized_keys" &&
+            scp -F ssh_config -3 bastion:.ssh/bastion.pub node2:.ssh/ &&
+            ssh -F ssh_config node2
             "cat .ssh/bastion.pub >> .ssh/authorized_keys"
           workdir: build/eve/workers/openstack-multiple-nodes/terraform/
       - ShellCommand:
@@ -1306,6 +1309,21 @@ stages:
           env:
             <<: *_env_collect_report_over_ssh
             HOSTS_LIST: "bootstrap node1"
+            SSH_CONFIG: >-
+              eve/workers/openstack-multiple-nodes/terraform/ssh_config
+            STEP_NAME: multiple-nodes-centos
+      - ShellCommand:
+          <<: *generate_report_over_ssh
+          env:
+            <<: *_env_generate_report_over_ssh
+            HOSTS_LIST: "bootstrap node2"
+            SSH_CONFIG: >-
+              eve/workers/openstack-multiple-nodes/terraform/ssh_config
+      - ShellCommand:
+          <<: *collect_report_over_ssh
+          env:
+            <<: *_env_collect_report_over_ssh
+            HOSTS_LIST: "bootstrap node2"
             SSH_CONFIG: >-
               eve/workers/openstack-multiple-nodes/terraform/ssh_config
             STEP_NAME: multiple-nodes-centos
