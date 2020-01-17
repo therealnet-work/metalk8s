@@ -117,48 +117,14 @@ Wait minion available:
 
 {%- if 'etcd' in roles and 'etcd' not in skip_roles %}
 
-Refresh and check pillar before etcd deployment:
-  salt.function:
-    - name: metalk8s.check_pillar_keys
-    - tgt: {{ node_name }}
-    - kwarg:
-        keys:
-          - metalk8s.endpoints.salt-master.ip
-          - metalk8s.endpoints.repositories.ip
-          - metalk8s.endpoints.repositories.ports.http
-        # We cannot raise when using `salt.function` as we need to return
-        # `False` to have a failed state
-        # https://github.com/saltstack/salt/issues/55503
-        raise_error: False
-    - retry:
-        attempts: 5
-    - require:
-      - salt: Sync module on the node
-
-Install etcd node:
-  salt.state:
-    - tgt: {{ node_name }}
-    - saltenv: metalk8s-{{ version }}
-    - sls:
-      - metalk8s.roles.etcd
-    - pillar:
-        metalk8s:
-          # Skip etcd healthcheck as we register etcd member just after
-          skip_etcd_healthcheck: True
-          # Skip apiserver-proxy healthcheck as local apiserver may not be
-          # deployed yet (as we call `highstate` just after)
-          skip_apiserver_proxy_healthcheck: True
-    - require:
-      - salt: Refresh and check pillar before etcd deployment
-
-Register the node into etcd cluster:
+Add node to the etcd cluster:
   salt.runner:
     - name: state.orchestrate
-    - pillar: {{ pillar | json  }}
+    - pillar: {{ pillar | json }}
     - mods:
-      - metalk8s.orchestrate.register_etcd
+      - metalk8s.orchestrate.add_etcd_member
     - require:
-      - salt: Install etcd node
+      - salt: Sync module on the node
     - require_in:
       - http: Wait for API server to be available before highstate
 
