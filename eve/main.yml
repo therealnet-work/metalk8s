@@ -247,7 +247,7 @@ models:
         PYTEST_FILTERS: "post and ci and not multinodes"
       command: >
         git checkout "${BRANCH}" &&
-        tox -e tests-local -- -m "${PYTEST_FILTERS}"
+        tox --recreate -e tests-local -- -m "${PYTEST_FILTERS}"
       haltOnFailure: true
   - ShellCommand: &bastion_tests
       name: Run tests on Bastion
@@ -899,7 +899,7 @@ stages:
             TEST_HOSTS_LIST: "bootstrap"
             PYTEST_FILTERS: "post and ci and not multinodes and not slow"
           command: >
-            tox -e tests -- -m "${PYTEST_FILTERS}"
+            tox --recreate -e tests -- -m "${PYTEST_FILTERS}"
           haltOnFailure: true
       - ShellCommand:
           <<: *generate_report_over_ssh
