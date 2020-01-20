@@ -70,6 +70,7 @@ etcd:
     healthcheck_client_signing_policy: etcd_client_policy
     peer_signing_policy: etcd_server_client_policy
     server_signing_policy: etcd_server_client_policy
+  initial_cluster_state: existing
 
 front_proxy:
   ca:

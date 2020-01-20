@@ -1,4 +1,5 @@
 {%- from "metalk8s/repo/macro.sls" import build_image_name with context %}
+{%- from "metalk8s/map.jinja" import etcd with context %}
 
 include:
   - metalk8s.kubernetes.ca.etcd.advertised
@@ -13,7 +14,15 @@ include:
 {%- set etcd_members = pillar.metalk8s.etcd.members %}
 
 {#- Compute the initial state according to the existing list of node. #}
-{%- set state = "existing" if etcd_members else "new" %}
+{%- if etcd.initial_cluster_state | string() == 'new' %}
+     {%- set state = etcd.initial_cluster_state %}
+{%- else %}
+    {%- if etcd_members is not none %}
+        {%- set state = etcd.initial_cluster_state %}
+    {%- else %}
+        {{ raise ('etcd member list cannot be empty for existing state') }}
+    {%- endif %}
+{%- endif %}
 
 {%- set etcd_endpoints = {} %}
 {#- NOTE: Filter out members with empty name as they are not started yet. #}
