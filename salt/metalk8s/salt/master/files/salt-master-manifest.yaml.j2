@@ -29,7 +29,7 @@ spec:
   containers:
     - name: salt-master
       image: {{ image }}
-      args: ['--log-level=info']
+      args: ['--log-level=debug']
       ports:
         - name: publisher
           containerPort: 4505
