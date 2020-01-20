@@ -165,11 +165,18 @@ def run_salt_command(host, command, ssh_config):
         namespace='kube-system'
     )
 
-    assert output.exit_status == 0, \
-        'deploy failed with: \nout: {}\nerr:'.format(
-            output.stdout,
-            output.stderr
-        )
+    if output.exit_status != 0:
+        with host.sudo():
+            minion_logfile = host.file('/var/log/salt/minion')
+            pytest.fail((
+                "Salt command '{}' failed with: \n"
+                "out: {}\nerr: {}\nminion log: {}"
+            ).format(
+                command,
+                output.stdout,
+                output.stderr,
+                minion_logfile.content_string,
+            ))
 
 def etcdctl(k8s_client, command, ssh_config):
     """Run an etcdctl command inside the etcd container."""
