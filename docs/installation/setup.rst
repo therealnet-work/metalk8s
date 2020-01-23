@@ -11,15 +11,13 @@ Prerequisites
 
 MetalK8s_ clusters require machines running CentOS_ / RHEL_ 7.6 or higher as
 their operating system. These machines may be virtual or physical, with no
-difference in setup procedure.
-
-For this installation, 5 machines are required (or 3, if running workload
-applications on your control plane nodes).
+difference in setup procedure. The number of machines to setup depends on the
+chosen architecture (see :ref:`installation-intro-architecture`).
 
 Sizing
 ------
-Each machine should have at least 2 CPU cores, 4 GB of RAM, and a root
-partition larger than 40 GB.
+Refer to :ref:`this explanation<installation-intro-sizing>` to size each
+machine according to its roles and the expected workloads.
 
 Proxies
 -------

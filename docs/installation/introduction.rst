@@ -1,6 +1,104 @@
 Introduction
 ============
 
+Foreword
+^^^^^^^^
+MetalK8s is a Kubernetes_ distribution with a number of addons carefully
+picked for optimal on-premises deployments, including pre-configured monitoring
+and alerting, self-healing system configuration, and more.
+
+The installation of a MetalK8s cluster can be broken down into
+the following steps:
+
+#. :doc:`Setup <./setup>` of the environment (with requirements and example
+   OpenStack deployment)
+#. :doc:`Deployment <./bootstrap>` of the :term:`Bootstrap node`, the first
+   machine in the cluster
+#. :doc:`Expansion <./expansion>` of the cluster, orchestrated from the
+   Bootstrap node
+
+.. _Kubernetes: https://kubernetes.io/
+
+.. _installation-intro-architecture:
+
+Choosing a Deployment Architecture
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Before starting the installation, choosing an architecture is recommended, as
+it can impact sizing of your machines and other infrastructure-related details.
+
+.. note:: "Machines" may indicate bare-metal servers or VMs interchangeably
+
+Standard Architecture
+"""""""""""""""""""""
+MetalK8s has been designed with on-premise, offline, reliable deployments in
+mind. The first example architecture proposed follows this spirit, focusing on
+reliability rather than compacity:
+
+- One machine dedicated to running Bootstrap services (see
+  :ref:`the Bootstrap role<node-role-bootstrap>` definition below)
+- Three extra machines (or five if installing a really large cluster,
+  100+ nodes) for running the Kubernetes_ control plane (with
+  :ref:`core K8s services<node-role-master>` and the backing
+  :ref:`etcd DB<node-role-etcd>`)
+- One or more machines dedicated to running Infra services (see
+  :ref:`the Infra role<node-role-infra>`)
+- Any number of machines dedicated to running applications, the number and
+  :ref:`sizing<installation-intro-sizing>` depending on the applications (for
+  instance, Zenko_ would recommend using three or more machines)
+
+.. image:: img/standard-arch.png
+   :width: 100%
+
+.. _Zenko: https://zenko.io/
+
+.. _installation-intro-compact-arch:
+
+Compact Architectures
+"""""""""""""""""""""
+While not being focused on having the smallest compute and memory footprints,
+MetalK8s can provide a fully functional single node "cluster". The Bootstrap
+node can be configured to also allow running applications next to all the other
+services required (see :ref:`the section about taints<node-taints>` below).
+
+A single node cluster does not provide any form of resilience to machine or
+site failure, which is why the recommended most compact architecture to use in
+production includes three machines:
+
+- Two machines running control plane services alongside infra and workload
+  applications
+- One machine running Bootstrap services in addition to all the other services
+
+.. image:: img/compact-arch.png
+   :width: 100%
+
+Please note that sizing of such compact clusters needs to account for the
+expected load, and the exact impact of colocating an application with MetalK8s
+services needs to be evaluated by said application's provider.
+
+Variations
+""""""""""
+It is possible to customize the chosen architecture using combinations of
+:ref:`roles<node-roles>` and :ref:`taints<node-taints>`, which are described
+below, to adapt to the available infrastructure.
+
+A simple example could be:
+
+- One machine running Bootstrap and control plane services
+- Two other machines running control plane and Infra services
+- Three more machines for workload applications
+
+.. image:: img/custom-arch.png
+   :width: 100%
+
+As a general recommendation, it is easier to monitor and operate well-isolated
+groups of machines in the cluster, where hardware issues would only impact one
+group of services.
+
+It is also possible to evolve an architecture after initial deployment, in case
+the underlying infrastructure also evolves (new machines can be added through
+the :doc:`expansion<./expansion>` mechanism, roles can be added or removed...).
+
+
 Concepts
 ^^^^^^^^
 Although being familiar with
@@ -14,7 +112,7 @@ Nodes
 containers and can be managed by the cluster (control plane services,
 described below).
 
-Control plane and Workload plane
+Control Plane and Workload Plane
 """"""""""""""""""""""""""""""""
 This dichotomy is central to MetalK8s, and often referred to in other
 Kubernetes concepts.
@@ -38,7 +136,7 @@ will be deployed via Kubernetes objects, managed by services provided by the
    Nodes may belong to both planes, so that one can run applications
    alongside the control plane services.
 
-control plane nodes often are responsible for providing storage for
+Control plane nodes often are responsible for providing storage for
 :term:`API Server`, by running :term:`etcd`. This responsibility may be
 offloaded to other nodes from the workload plane (without the ``etcd`` taint).
 
@@ -52,22 +150,32 @@ form ``node-role.kubernetes.io/<role-name>: ''``.
 
 MetalK8s uses five different **roles**, that may be combined freely:
 
+.. _node-role-master:
+
 ``node-role.kubernetes.io/master``
   The ``master`` role marks a control plane member. control plane services
   (see above) can only be scheduled on ``master`` nodes.
+
+.. _node-role-etcd:
 
 ``node-role.kubernetes.io/etcd``
   The ``etcd`` role marks a node running :term:`etcd` for storage of
   :term:`API Server`.
 
+.. _node-role-node:
+
 ``node-role.kubernetes.io/node``
   This role marks a workload plane node. It is included implicitly by all
   other roles.
+
+.. _node-role-infra:
 
 ``node-role.kubernetes.io/infra``
   The ``infra`` role is specific to MetalK8s. It serves for marking nodes where
   non-critical services provided by the cluster (monitoring stack, UIs, etc.)
   are running.
+
+.. _node-role-bootstrap:
 
 ``node-role.kubernetes.io/bootstrap``
   This marks the :term:`Bootstrap node`. This node is unique in the cluster,
@@ -80,6 +188,10 @@ MetalK8s uses five different **roles**, that may be combined freely:
   In practice, this role is used in conjunction with the ``master``
   and ``etcd`` roles for bootstrapping the control plane.
 
+In the :ref:`architecture diagrams<installation-intro-architecture>` presented
+above, each box represents a role (with the ``node-role.kubernetes.io/`` prefix
+omitted).
+
 .. _node-taints:
 
 Node Taints
@@ -91,6 +203,22 @@ corresponding :term:`tolerations <Toleration>` can be scheduled on that Node.
 Taints allow dedicating Nodes to specific use-cases, such as having Nodes
 dedicated to running control plane services.
 
+Refer to the :ref:`architecture diagrams<installation-intro-architecture>`
+above for examples: each **T** marker on a role means the taint corresponding
+to this role has been applied on the Node.
+
+Note that Pods from the control plane services (corresponding to ``master`` and
+``etcd`` roles) have tolerations for the ``bootstrap`` and ``infra`` taints.
+This is because after :doc:`bootstrapping the first Node<./bootstrap>`, it
+will be configured as follows:
+
+.. image:: img/bootstrap-single-node-arch.png
+   :width: 100%
+
+The taints applied are only tolerated by services deployed by MetalK8s. If the
+selected architecture requires workloads to run on the Bootstrap node, these
+taints should be removed (see the
+:ref:`compact architecture<installation-intro-compact-arch>` diagram).
 
 .. _installation-intro-networks:
 
@@ -119,32 +247,30 @@ other ranges during the
 :ref:`Bootstrap configuration <Bootstrap Configuration>`.
 
 
-.. _installation-intro-install-plan:
+Additional Notes
+^^^^^^^^^^^^^^^^
 
-Installation Plan
-^^^^^^^^^^^^^^^^^
-In this guide, the depicted installation procedure is for a medium-sized
-cluster, using three control plane nodes and two worker nodes. Refer to
-the :doc:`/installation/index` for extensive explanations of possible
-cluster architectures.
+.. _installation-intro-sizing:
 
-.. note::
+Sizing
+""""""
 
-   This image depicts the architecture deployed with this installation guide.
+.. todo::
 
-   .. image:: img/architecture.png
-      :width: 100%
+   - Explain the impact of each role in terms of CPU/Memory usage
+   - Remind the need for storage (etcd, Prometheus/Alertmanager)
+   - Explain how running applications will add on top of MetalK8s requirements
 
-   .. todo::
+.. _installation-intro-cloud:
 
-      - describe architecture schema, include legend
-      - improve architecture explanation and presentation
+Deploying with Cloud Providers
+""""""""""""""""""""""""""""""
 
-The installation process can be broken down into the following steps:
+.. todo::
 
-#. :doc:`Setup <./setup>` of the environment (with requirements and example
-   OpenStack deployment)
-#. :doc:`Deployment <./bootstrap>` of the :term:`Bootstrap node`
-#. :doc:`Expansion <./expansion>` of the cluster from the Bootstrap node
-
-.. todo:: Include a link to example Solution deployment?
+   - Remind that most cloud providers have their hosted Kubernetes services,
+     which would make sense to use if possible
+   - In case of cloud infrastructure, networking may require some adjustments
+     (ref to IP-IP encapsulation doc)
+   - Cloud providers may have some features integrated in Kubernetes already
+     such as load balancers, see https://kubernetes.io/docs/concepts/cluster-administration/cloud-providers/
