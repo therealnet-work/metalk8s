@@ -81,6 +81,50 @@ def control_plane_ip(host):
 
 # Given {{{
 
+
+@given(parsers.parse(
+    "the control-plane Ingress container is Ready"))
+def check_cp_ingress_containers(request, host, k8s_client):
+    namespace = "metalk8s-ingress"
+    ssh_config = request.config.getoption('--ssh-config')
+    label = "release=nginx-ingress-control-plane"
+
+    def _get_pod_name():
+        pods = kube_utils.get_pods(
+            k8s_client, ssh_config, label, namespace=namespace
+        )
+        for pod in pods:
+            return pod.metadata.name
+
+    utils.retry(
+        _get_pod_name,
+        times=10,
+        wait=5,
+        name="trying to get the pod name"
+    )
+
+    def _wait_for_container():
+        try:
+            name = _get_pod_name()
+            pod = k8s_client.read_namespaced_pod(
+                name=name,
+                namespace=namespace
+            )
+        except Exception as exc:
+            pytest.fail("Unable to read pod with error: {}".format(exc))
+
+        assert all(
+                container.ready == True for container in
+                pod.status.container_statuses
+        )
+    utils.retry(
+        _wait_for_container,
+        times=10,
+        wait=5,
+        name="wait for nginx-ingress-control-plane container"
+    )
+
+
 @given(parsers.parse(
     "the control-plane Ingress path '{path}' is available"))
 def check_cp_ingress_pod(request, host, k8s_client, control_plane_ip):
@@ -97,7 +141,7 @@ def check_cp_ingress_pod(request, host, k8s_client, control_plane_ip):
     utils.retry(
         _wait_for_ingress,
         times=10,
-        wait=3,
+        wait=5,
         name="wait for pod labeled '{}'".format(label)
     )
     # Todo: use the ingress object to check it's addresses
@@ -168,7 +212,7 @@ def reach_openid_config(host, control_plane_ip):
             control_plane_ip, INGRESS_PORT
         )
 
-    utils.retry(_get_openID_config, times=10, wait=3)
+    utils.retry(_get_openID_config, times=10, wait=5)
 
 
 @then(parsers.parse(

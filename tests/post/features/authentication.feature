@@ -11,6 +11,7 @@ Feature: Authentication is up and running
 
     Scenario: Reach the OpenID Config
         Given the Kubernetes API is available
+        And the control-plane Ingress container is Ready
         And the control-plane Ingress path '/oidc' is available
         And pods with label 'app.kubernetes.io/name=dex' are 'Ready'
         Then we can reach the OIDC openID configuration
