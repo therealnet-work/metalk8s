@@ -188,6 +188,10 @@ MetalK8s uses five different **roles**, that may be combined freely:
   In practice, this role is used in conjunction with the ``master``
   and ``etcd`` roles for bootstrapping the control plane.
 
+In the :ref:`architecture diagrams<installation-intro-architecture>` presented
+above, each box represents a role (with the ``node-role.kubernetes.io/`` prefix
+omitted).
+
 .. _node-taints:
 
 Node Taints
@@ -199,6 +203,22 @@ corresponding :term:`tolerations <Toleration>` can be scheduled on that Node.
 Taints allow dedicating Nodes to specific use-cases, such as having Nodes
 dedicated to running control plane services.
 
+Refer to the :ref:`architecture diagrams<installation-intro-architecture>`
+above for examples: each **T** marker on a role means the taint corresponding
+to this role has been applied on the Node.
+
+Note that Pods from the control plane services (corresponding to ``master`` and
+``etcd`` roles) have tolerations for the ``bootstrap`` and ``infra`` taints.
+This is because after :doc:`bootstrapping the first Node<./bootstrap>`, it
+will be configured as follows:
+
+.. image:: img/bootstrap-single-node-arch.png
+   :width: 100%
+
+The taints applied are only tolerated by services deployed by MetalK8s. If the
+selected architecture requires workloads to run on the Bootstrap node, these
+taints should be removed (see the
+:ref:`compact architecture<installation-intro-compact-arch>` diagram).
 
 .. _installation-intro-networks:
 
@@ -260,3 +280,26 @@ An extra partition for ``etcd`` should be provisioned on control plane Nodes
 (see :ref:`this note<Setup etcd partition>` for more details). Prometheus and
 Alertmanager also require storage, as explained in
 :ref:`this section<Provision Prometheus Storage>`.
+
+.. _installation-intro-cloud:
+
+Deploying with Cloud Providers
+""""""""""""""""""""""""""""""
+Installing MetalK8s on virtual machines in cloud environments is perfectly
+achievable. Note however that most cloud providers have their own offerings
+for hosted Kubernetes clusters, which can save time and efforts (operation
+of the cluster being delegated).
+
+When installing in a virtual environment, such as `AWS EC2`_ or `OpenStack`_,
+special care will be needed for adjusting networks configuration. Virtual
+environments often add a layer of security at the port level, which should be
+disabled, or circumvented with :ref:`IP-in-IP encapsulation<enable IP-in-IP>`.
+
+Also note that Kubernetes has numerous integrations with existing cloud
+providers to provide easier access to proprietary features, such as
+load balancers. For more information, see
+`this documentation article
+<https://kubernetes.io/docs/concepts/cluster-administration/cloud-providers/>`_.
+
+.. _AWS EC2: https://aws.amazon.com/ec2/
+.. _OpenStack: https://www.openstack.org/
