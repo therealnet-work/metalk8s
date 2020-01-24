@@ -43,8 +43,8 @@ reliability rather than compacity:
 - One or more machines dedicated to running Infra services (see
   :ref:`the Infra role<node-role-infra>`)
 - Any number of machines dedicated to running applications, the number and
-  sizing depending on the applications (for instance, Zenko_ would recommend
-  using three or more machines)
+  :ref:`sizing<installation-intro-sizing>` depending on the applications (for
+  instance, Zenko_ would recommend using three or more machines)
 
 .. image:: img/standard-arch.png
    :width: 100%
@@ -225,3 +225,38 @@ communications:
 In case of conflicts with the existing infrastructure, make sure to choose
 other ranges during the
 :ref:`Bootstrap configuration <Bootstrap Configuration>`.
+
+
+Additional Notes
+^^^^^^^^^^^^^^^^
+
+.. _installation-intro-sizing:
+
+Sizing
+""""""
+Defining an appropriate sizing for the machines in a MetalK8s cluster strongly
+depends on the selected architecture and the expected future variations to
+this architecture. Refer to the documentation of the applications planned to
+run in the deployed cluster before completing the sizing, as their needs will
+compete with the cluster's.
+
+Each :ref:`role<node-roles>`, describing a group of services, requires a
+certain amount of resources for it to run properly. If multiple roles are used
+on a single Node, these requirements add up:
+
+- Bootstrap services, including Salt Master and its API, package repositories,
+  and container registries, need a minimum of 1 CPU core and 2 GB of RAM
+- Control plane services, including Kubernetes API and its backing ``etcd``
+  database, require at least 0.5 CPU core and 1.5 GB of RAM
+- Infra services, running Prometheus and Alertmanager among others, need 0.5
+  CPU core and 1.5 GB of RAM
+
+These numbers are not accounting for highly unstable workloads or other sources
+of unpredictable load on the cluster services, and it is recommended to provide
+an additional 50% of resources as a safety margin.
+
+Each machine in the cluster should have a root partition of at least 40 GB.
+An extra partition for ``etcd`` should be provisioned on control plane Nodes
+(see :ref:`this note<Setup etcd partition>` for more details). Prometheus and
+Alertmanager also require storage, as explained in
+:ref:`this section<Provision Prometheus Storage>`.
