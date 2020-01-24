@@ -52,12 +52,21 @@ def get_ip_from_cidr(host, cidr):
     return None
 
 
+def get_node_grain(grain, nodename, ssh_config):
+    node = testinfra.get_host(nodename, ssh_config=ssh_config)
+    with node.sudo():
+        return node.check_output(
+            'salt-call --local --out txt grains.get {} | cut -c 8-'
+            .format(grain)
+        )
+
+
 def get_node_name(nodename, ssh_config=None):
     """Get a node name (from SSH config)."""
     if ssh_config is not None:
-        node = testinfra.get_host(nodename, ssh_config=ssh_config)
-        with node.sudo():
-            return node.check_output(
-                'salt-call --local --out txt grains.get id | cut -c 8-'
-            )
+        return get_node_grain('id', nodename, ssh_config)
     return nodename
+
+
+def get_node_control_plane_ip(nodename, ssh_config):
+    return get_node_grain('metalk8s:control_plane_ip', nodename, ssh_config)
