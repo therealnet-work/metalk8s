@@ -1165,7 +1165,7 @@ stages:
       - ShellCommand:
           <<: *terraform_apply
           workdir: build/eve/workers/openstack-multiple-nodes/terraform/
-          env:
+          env: &_env_terraform_multiple_nodes
             <<: *_env_terraform
             TF_VAR_nodes_count: "2"
       - ShellCommand:
@@ -1201,20 +1201,20 @@ stages:
               scp -F ssh_config -3 bastion:.ssh/bastion bootstrap:./         &&
               ssh -F ssh_config bootstrap "sudo cp bastion /etc/metalk8s/pki/"
           workdir: build/eve/workers/openstack-multiple-nodes/terraform/
-      - ShellCommand:
+      - ShellCommand: &copy_iso_bootstrap_node_ssh
           name: Copy ISO to bootstrap node
           command: >
             scp -F ssh_config ../../../../metalk8s.iso bootstrap:
           workdir: build/eve/workers/openstack-multiple-nodes/terraform/
           haltOnFailure: true
-      - ShellCommand:
+      - ShellCommand: &create_mountpoint_bootstrap_node_ssh
           name: Create mountpoint in bootstrap node
           command: >
             ssh -F ssh_config bootstrap
             sudo mkdir -p /var/tmp/metalk8s
           workdir: build/eve/workers/openstack-multiple-nodes/terraform/
           haltOnFailure: true
-      - ShellCommand:
+      - ShellCommand: &mount_iso_bootstrap_node_ssh
           name: Mount ISO image in bootstrap node
           command: >
             ssh -F ssh_config bootstrap
@@ -1302,6 +1302,102 @@ stages:
             SSH_CONFIG: >-
               eve/workers/openstack-multiple-nodes/terraform/ssh_config
             STEP_NAME: multiple-nodes-centos
+      - SetPropertyFromCommand:
+          name: Set bootstrap backup archive property
+          property: bootstrap_backup_archive
+          command: >
+            ssh -F ssh_config bootstrap
+            "sudo find /var/lib/metalk8s -name 'backup_*.tar.gz'
+            -printf '%f\n' | sort | tail -n1"
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - ShellCommand:
+          name: Retrieve the backup archive from the bootstrap node
+          command: >
+            scp -F ssh_config
+            bootstrap:"/var/lib/metalk8s/%(prop:bootstrap_backup_archive)s"
+            /tmp
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - ShellCommand:
+          name: Destroy the bootstrap node
+          env: *_env_terraform_multiple_nodes
+          command: >
+            terraform destroy -auto-approve
+            -target openstack_compute_instance_v2.bootstrap
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - SetPropertyFromCommand:
+          name: Set node1 etcd container id
+          property: node1_etcd_container_id
+          command: >
+            ssh -F ssh_config node1
+            sudo crictl ps -q --label io.kubernetes.pod.namespace=kube-system
+            --label io.kubernetes.container.name=etcd --state Running
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - SetPropertyFromCommand:
+          name: Set boostrap node etcd member id
+          property: bootstrap_etcd_member_id
+          command: >
+            ssh -F ssh_config node1
+            sudo crictl exec -i "%(prop:node1_etcd_container_id)s" sh -c "
+            ETCDCTL_API=3 etcdctl --endpoints https://127.0.0.1:2379
+            --cert /etc/kubernetes/pki/etcd/server.crt
+            --key /etc/kubernetes/pki/etcd/server.key
+            --cacert /etc/kubernetes/pki/etcd/ca.crt
+            member list" | awk -F ', ' '$3 == "bootstrap" { print $1 }'
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - ShellCommand:
+          name: Remove bootstrap node from etcd members
+          command: >
+            ssh -F ssh_config node1
+            sudo crictl exec -i "%(prop:node1_etcd_container_id)s" sh -c "
+            ETCDCTL_API=3 etcdctl --endpoints https://127.0.0.1:2379
+            --cert /etc/kubernetes/pki/etcd/server.crt
+            --key /etc/kubernetes/pki/etcd/server.key
+            --cacert /etc/kubernetes/pki/etcd/ca.crt
+            member remove %(prop:bootstrap_etcd_member_id)s"
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - ShellCommand:
+          name: Recreate the bootstrap node
+          env: *_env_terraform_multiple_nodes
+          command:
+            terraform apply -auto-approve -refresh
+            -target openstack_compute_instance_v2.bootstrap
+            -target null_resource.ssh_config
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - ShellCommand:
+          name: Copy the backup archive to the bootstrap node
+          command: >
+            scp -F ssh_config
+            "/tmp/%(prop:bootstrap_backup_archive)s" bootstrap:/tmp
+          workdir: build/eve/workers/openstack-multiple-nodes/terraform/
+          haltOnFailure: true
+      - ShellCommand: *copy_iso_bootstrap_node_ssh
+      - ShellCommand: *create_mountpoint_bootstrap_node_ssh
+      - ShellCommand: *mount_iso_bootstrap_node_ssh
+      - ShellCommand:
+          <<: *bastion_tests
+          name: Run restore tests on the bastion
+          env:
+            <<: *_env_bastion_tests
+            PYTEST_FILTERS: "restore"
+      - ShellCommand:
+          <<: *bastion_tests
+          name: Run fast tests on the bastion
+          env:
+            <<: *_env_bastion_tests
+            PYTEST_FILTERS: "post and ci and not slow"
+      - ShellCommand:
+          <<: *bastion_tests
+          name: Run slow tests on the bastion
+          env:
+            <<: *_env_bastion_tests
+            PYTEST_FILTERS: "post and ci and slow"
       - Upload: *upload_report_artifacts
       - ShellCommand:
           <<: *add_final_status_artifact_success
